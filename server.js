@@ -26,6 +26,16 @@ const upload = multer({ storage });
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
+// Simple password protection middleware
+const SITE_PASSWORD = process.env.SITE_PASSWORD || "Admin123"; // Set your password here
+
+app.post('/api/login', (req, res) => {
+    const { password } = req.body;
+    if (password === SITE_PASSWORD) {
+        return res.json({ success: true, message: "Authenticated successfully" });
+    }
+    return res.status(401).json({ success: false, message: "Incorrect Password" });
+});
 
 // Default Application Settings
 let appSettings = {
@@ -59,21 +69,25 @@ function loadAssetData() {
     if (!fs.existsSync(EXCEL_FILE)) return [];
     const workbook = xlsx.readFile(EXCEL_FILE);
     const sheetName = workbook.SheetNames[0];
-    const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const rawData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' });
     
-    return rawData.map((item, index) => ({
-        id: item.id || index + 1,
-        location: (item['Location'] || 'PV Field').toString().trim(),
-        block: item['Block'] !== undefined && item['Block'] !== '' ? item['Block'].toString().trim() : 'N/A',
-        equipmentName: (item['Equipment Name'] || '').toString().trim(),
-        subEquipmentName: (item['Sub Equipment Name'] || '-').toString().trim(),
-        make: (item['Make'] || '-').toString().trim(),
-        qty: item['Qty.'] !== undefined ? item['Qty.'] : 1,
-        capacity: (item['Capacity/ Rating'] || '-').toString().trim(),
-        serialNo: (item['Equipment Serial No.'] || '-').toString().trim(),
-        ipAddress: (item['IP Address'] || '-').toString().trim(),
-        ipForEquipment: (item['IP for Equipment'] || '-').toString().trim()
-    }));
+    return rawData.map((item, index) => {
+        const clean = (val) => (val !== undefined && val !== null) ? String(val).trim() : '';
+        
+        return {
+            id: item.id || index + 1,
+            location: clean(item['Location']) || 'PV Field',
+            block: clean(item['Block']).replace(/\.0$/, '') || '1',
+            equipmentName: clean(item['Equipment Name']) || 'N/A',
+            subEquipmentName: clean(item['Sub Equipment Name']) || '-',
+            make: clean(item['Make']) || '-',
+            qty: item['Qty.'] !== '' && item['Qty.'] !== undefined ? item['Qty.'] : 1,
+            capacity: clean(item['Capacity/ Rating']) || '-',
+            serialNo: clean(item['Equipment Serial No.']) || '-',
+            ipAddress: clean(item['IP Address']) || '-',
+            ipForEquipment: clean(item['IP for Equipment']) || '-'
+        };
+    });
 }
 
 // Write Excel Spreadsheet
