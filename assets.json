@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "location": "Plant 1",
+    "block": "Block A",
+    "equipmentName": "Inverter",
+    "subEquipmentName": "SMB 01",
+    "make": "SMA",
+    "qty": 2,
+    "capacity": "100kW"
+  }
+]
