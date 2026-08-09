@@ -2,151 +2,588 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar Asset Management</title>
-    <!-- MUST HAVE THIS EXACT LINE FOR STYLING -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
+    <title>Asset Detail Software</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; }
+        .logo-img { max-height: 55px; max-width: 180px; object-fit: contain; }
+        .table-responsive { max-height: 600px; }
+        .search-card { border-top: 4px solid #0d6efd; }
+    </style>
 </head>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="#">Solar Asset Management</a>
-            <button class="btn btn-outline-light btn-sm ms-auto" onclick="openSettingsModal()">Settings</button>
+<body>
+<div class="container-fluid py-3">
+    <!-- Dynamic Header -->
+    <div class="d-flex justify-content-between align-items-center bg-white p-3 rounded shadow-sm mb-3">
+        <div class="d-flex align-items-center gap-3">
+            <img id="appLogo" src="" alt="Logo" class="logo-img d-none">
+            <h2 id="appHeading" class="text-primary m-0 fw-bold">Solar Plant Asset Management System</h2>
         </div>
-    </nav>
+        <div class="d-flex gap-2">
+            <a href="/api/assets/download" class="btn btn-success">📥 Download Excel Report</a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">➕ Add Material</button>
+            <button class="btn btn-outline-dark" onclick="openSettingsModal()">⚙️ Software Settings</button>
+        </div>
+    </div>
 
-    <!-- Main Container -->
-    <div class="container my-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3>Asset Inventory</h3>
-            <button class="btn btn-primary" onclick="addModal.show()">+ Add Asset</button>
+    <!-- Multi-Parameter Search Controls -->
+    <div class="card p-3 mb-3 shadow-sm search-card">
+        <h5 class="card-title text-secondary mb-3">🔍 Multi-Parameter Asset Search</h5>
+        <div class="row g-2">
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">1. Location</label>
+                <select id="filterLocation" class="form-select form-select-sm"><option value="">All Locations</option></select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">2. Block</label>
+                <select id="filterBlock" class="form-select form-select-sm"><option value="">All Blocks</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold small">3. Equipment Name</label>
+                <select id="filterEquipment" class="form-select form-select-sm"><option value="">All Equipment</option></select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold small">4. Sub-Equipment</label>
+                <select id="filterSubEquipment" class="form-select form-select-sm"><option value="">All Sub-Equipment</option></select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-bold small">5. Make / Brand</label>
+                <select id="filterMake" class="form-select form-select-sm"><option value="">All Makes</option></select>
+            </div>
         </div>
 
-        <div class="table-responsive bg-white shadow-sm rounded p-3">
-            <table class="table table-hover align-middle">
+        <div class="row g-2 mt-2">
+            <div class="col-md-8">
+                <input type="text" id="filterGeneral" class="form-control form-select-sm" placeholder="Search Serial No, IP Address, Rating, Purpose...">
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button class="btn btn-secondary btn-sm w-100" onclick="resetFilters()">🔄 Clear / Reset Search</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <span class="fw-bold">Asset Records (<span id="recordCount">0</span>)</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 text-nowrap">
                 <thead class="table-dark">
                     <tr>
-                        <th>ID</th>
                         <th>Location</th>
                         <th>Block</th>
-                        <th>Equipment</th>
-                        <th>Sub-Equipment</th>
+                        <th>Equipment Name</th>
+                        <th>Sub Equipment</th>
                         <th>Make</th>
                         <th>Qty</th>
-                        <th>Capacity</th>
+                        <th>Capacity/Rating</th>
+                        <th>Serial No</th>
+                        <th>IP Address</th>
+                        <th>IP Purpose</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
-                <tbody id="assetTableBody">
-                    <!-- Dynamic Rows Loaded Here -->
-                </tbody>
+                <tbody id="assetTableBody"></tbody>
             </table>
         </div>
     </div>
+</div>
 
-    <!-- Add Asset Modal -->
-    <div class="modal fade" id="addModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add New Asset</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="addForm">
-                        <div class="mb-2"><input type="text" class="form-control" id="addLocation" placeholder="Location" required></div>
-                        <div class="mb-2"><input type="text" class="form-control" id="addBlock" placeholder="Block" required></div>
-                        <div class="mb-2"><input type="text" class="form-control" id="addEquipmentName" placeholder="Equipment Name" required></div>
-                        <button type="submit" class="btn btn-primary w-100 mt-2">Save Asset</button>
-                    </form>
-                </div>
-            </div>
-        </div>
+<!-- Add Material Modal -->
+<div class="modal fade" id="addModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Add New Material / Asset</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="addForm">
+            <div class="mb-2"><label>Location</label><input type="text" id="addLocation" class="form-control" value="PV Field" required></div>
+            <div class="mb-2"><label>Block Number</label><input type="text" id="addBlock" class="form-control" placeholder="e.g. 1" required></div>
+            <div class="mb-2"><label>Equipment Name</label><input type="text" id="addEquipmentName" class="form-control" required></div>
+            <div class="mb-2"><label>Sub Equipment Name</label><input type="text" id="addSubEquipmentName" class="form-control" value="-"></div>
+            <div class="mb-2"><label>Make / Manufacturer</label><input type="text" id="addMake" class="form-control" value="-"></div>
+            <div class="mb-2"><label>Quantity</label><input type="number" id="addQty" class="form-control" value="1"></div>
+            <div class="mb-2"><label>Capacity / Rating</label><input type="text" id="addCapacity" class="form-control" value="-"></div>
+            <div class="mb-2"><label>Serial Number</label><input type="text" id="addSerialNo" class="form-control" value="-"></div>
+            <div class="mb-2"><label>IP Address</label><input type="text" id="addIpAddress" class="form-control" value="-"></div>
+            <div class="mb-2"><label>IP Purpose</label><input type="text" id="addIpForEquipment" class="form-control" value="-"></div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" onclick="saveNewAsset()">Save Material</button>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- Settings Modal -->
-    <div class="modal fade" id="settingsModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">System Settings</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Settings configured successfully.</p>
-                </div>
+<!-- Edit/Delete Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Edit / Delete Asset</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <form id="editForm">
+            <input type="hidden" id="editId">
+            <div class="mb-2"><label>Location</label><input type="text" id="editLocation" class="form-control"></div>
+            <div class="mb-2"><label>Block Number</label><input type="text" id="editBlock" class="form-control"></div>
+            <div class="mb-2"><label>Equipment Name</label><input type="text" id="editEquipmentName" class="form-control"></div>
+            <div class="mb-2"><label>Sub Equipment Name</label><input type="text" id="editSubEquipmentName" class="form-control"></div>
+            <div class="mb-2"><label>Make / Manufacturer</label><input type="text" id="editMake" class="form-control"></div>
+            <div class="mb-2"><label>Quantity</label><input type="number" id="editQty" class="form-control"></div>
+            <div class="mb-2"><label>Capacity / Rating</label><input type="text" id="editCapacity" class="form-control"></div>
+            <div class="mb-2"><label>Serial Number</label><input type="text" id="editSerialNo" class="form-control"></div>
+            <div class="mb-2"><label>IP Address</label><input type="text" id="editIpAddress" class="form-control"></div>
+            <div class="mb-2"><label>IP Purpose</label><input type="text" id="editIpForEquipment" class="form-control"></div>
+            <div class="mb-2 bg-light p-2 rounded border">
+                <label class="text-danger fw-bold">Admin Password Required for Edit/Delete:</label>
+                <input type="password" id="editPassword" class="form-control" placeholder="Enter password to modify">
             </div>
-        </div>
+        </form>
+      </div>
+      <div class="modal-footer d-flex justify-content-between">
+        <button class="btn btn-danger" onclick="deleteAsset()">🗑️ Delete Asset</button>
+        <button class="btn btn-primary" onclick="updateAsset()">💾 Update Asset</button>
+      </div>
     </div>
+  </div>
+</div>
 
-    <!-- Developer Credit Footer -->
-    <footer class="text-center py-3 my-4 border-top text-muted">
-        <p class="mb-0">Designed & Developed by <strong>Rahul Kumawat</strong></p>
-    </footer>
+<!-- Software Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">⚙️ Software Configuration</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-body">
+        <div class="mb-3">
+            <label class="fw-bold">Software Heading Name</label>
+            <input type="text" id="settingHeading" class="form-control">
+        </div>
+        <div class="mb-3">
+            <label class="fw-bold">Upload Company Logo Image</label>
+            <input type="file" id="settingLogo" class="form-control" accept="image/*">
+        </div>
+        <div class="mb-3">
+            <label class="fw-bold">Change Admin Password</label>
+            <input type="password" id="settingNewPass" class="form-control" placeholder="Leave empty to keep current">
+        </div>
+        <div class="mb-3 bg-light p-2 rounded border">
+            <label class="text-danger fw-bold">Current Admin Password:</label>
+            <input type="password" id="settingCurrentPass" class="form-control" placeholder="Required to save settings">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="saveSettings()">Save Settings</button>
+      </div>
+    </div>
+  </div>
+<</div>
 
-    <!-- 1. Bootstrap JS (MUST BE LOADED FIRST) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.bundle.min.js"></script>
+<!-- Developer Credit Footer -->
+<footer class="text-center py-3 my-4 border-top text-muted">
+    <p class="mb-0">Designed & Developed by <strong>Rahul Kumawat</strong></p>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.bundle.min.js"></script>
+<script>
+let addModal, editModal, settingsModal;
 
-    <!-- 2. Your Custom Script (LOADED SECOND) -->
-    <script>
-        let addModal, editModal, settingsModal;
-        let rawData = [];
+document.addEventListener('DOMContentLoaded', () => {
+    addModal = new bootstrap.Modal(document.getElementById('addModal'));
+    editModal = new bootstrap.Modal(document.getElementById('editModal'));
+    settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
+    
+    loadSettings();
+    fetchAssets();
 
-        document.addEventListener('DOMContentLoaded', () => {
-            // Ensure Bootstrap bundle loaded correctly
-            if (typeof bootstrap !== 'undefined') {
-                addModal = new bootstrap.Modal(document.getElementById('addModal'));
-                settingsModal = new bootstrap.Modal(document.getElementById('settingsModal'));
-            }
-            fetchAssets();
+    document.getElementById('filterLocation').addEventListener('change', () => updateDropdownCascade('location'));
+    document.getElementById('filterBlock').addEventListener('change', () => updateDropdownCascade('block'));
+    document.getElementById('filterEquipment').addEventListener('change', () => updateDropdownCascade('equipment'));
+    document.getElementById('filterSubEquipment').addEventListener('change', () => updateDropdownCascade('subEquipment'));
+    document.getElementById('filterMake').addEventListener('change', () => filterAndRender());
+    document.getElementById('filterGeneral').addEventListener('input', () => filterAndRender());
+});
+async function saveNewAsset() {
+    const location = document.getElementById('addLocation').value.trim();
+    const block = document.getElementById('addBlock').value.trim();
+    const equipmentName = document.getElementById('addEquipmentName').value.trim();
+
+    if (!equipmentName || !block) {
+        alert("Please fill in at least the Block Number and Equipment Name!");
+        return;
+    }
+
+    const body = {
+        location: location || 'PV Field',
+        block: block,
+        equipmentName: equipmentName,
+        subEquipmentName: document.getElementById('addSubEquipmentName').value.trim() || '-',
+        make: document.getElementById('addMake').value.trim() || '-',
+        qty: document.getElementById('addQty').value || 1,
+        capacity: document.getElementById('addCapacity').value.trim() || '-',
+        serialNo: document.getElementById('addSerialNo').value.trim() || '-',
+        ipAddress: document.getElementById('addIpAddress').value.trim() || '-',
+        ipForEquipment: document.getElementById('addIpForEquipment').value.trim() || '-'
+    };
+
+    try {
+        const res = await fetch('/api/assets/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
         });
-
-        function openSettingsModal() {
-            if (settingsModal) {
-                settingsModal.show();
-            } else {
-                const el = document.getElementById('settingsModal');
-                const modal = bootstrap.Modal.getOrCreateInstance(el);
-                modal.show();
-            }
+        const resData = await res.json();
+        
+        if (res.ok && resData.success) {
+            alert(resData.message);
+            addModal.hide();
+            // Reset form
+            document.getElementById('addForm').reset();
+            document.getElementById('addLocation').value = 'PV Field';
+            document.getElementById('addSubEquipmentName').value = '-';
+            document.getElementById('addMake').value = '-';
+            document.getElementById('addQty').value = '1';
+            document.getElementById('addCapacity').value = '-';
+            document.getElementById('addSerialNo').value = '-';
+            document.getElementById('addIpAddress').value = '-';
+            document.getElementById('addIpForEquipment').value = '-';
+            
+            fetchAssets(); // Refresh table live
+        } else {
+            alert("Error: " + (resData.message || "Failed to add material"));
         }
-
-        async function fetchAssets() {
-            try {
-                const res = await fetch('/api/assets');
-                if (res.ok) {
-                    rawData = await res.json();
-                    renderTable(rawData);
-                }
-            } catch (err) {
-                console.error("Failed to load assets:", err);
-            }
+    } catch (err) {
+        alert("Server Error: " + err.message);
+    }
+}
+async function loadSettings() {
+    try {
+        const res = await fetch('/api/settings');
+        const settings = await res.json();
+        document.getElementById('appHeading').innerText = settings.appTitle;
+        if (settings.logoUrl) {
+            const logoImg = document.getElementById('appLogo');
+            logoImg.src = settings.logoUrl;
+            logoImg.classList.remove('d-none');
         }
+    } catch (e) { console.error(e); }
+}
 
-        function renderTable(data) {
-            const tbody = document.getElementById('assetTableBody');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            if (!data || data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No asset records found</td></tr>';
-                return;
-            }
-            data.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${item.id || '-'}</td>
-                    <td>${item.location || '-'}</td>
-                    <td>${item.block || '-'}</td>
-                    <td>${item.equipmentName || '-'}</td>
-                    <td>${item.subEquipmentName || '-'}</td>
-                    <td>${item.make || '-'}</td>
-                    <td>${item.qty || '-'}</td>
-                    <td>${item.capacity || '-'}</td>
-                    <td><button class="btn btn-sm btn-outline-danger">Delete</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
+async function fetchAssets() {
+    try {
+        const res = await fetch('/api/assets');
+        const result = await res.json();
+        if(result.success) {
+            rawData = result.data;
+            updateDropdownCascade('init');
         }
-    </script>
+    } catch (e) { console.error(e); }
+}
+
+function updateDropdownCascade(changedLevel) {
+    let subset = [...rawData];
+
+    const locVal = document.getElementById('filterLocation').value;
+    const blockVal = document.getElementById('filterBlock').value;
+    const equipVal = document.getElementById('filterEquipment').value;
+    const subEquipVal = document.getElementById('filterSubEquipment').value;
+
+    if (changedLevel === 'init') {
+        populateSelect('filterLocation', getUnique(subset, 'location'), 'Location');
+    }
+
+    if (locVal) subset = subset.filter(d => d.location === locVal);
+    if (changedLevel === 'init' || changedLevel === 'location') {
+        populateSelect('filterBlock', getUnique(subset, 'block'), 'Block');
+    }
+
+    if (blockVal) subset = subset.filter(d => d.block === blockVal);
+    if (changedLevel === 'init' || changedLevel === 'location' || changedLevel === 'block') {
+        populateSelect('filterEquipment', getUnique(subset, 'equipmentName'), 'Equipment');
+    }
+
+    if (equipVal) subset = subset.filter(d => d.equipmentName === equipVal);
+    if (changedLevel === 'init' || changedLevel === 'location' || changedLevel === 'block' || changedLevel === 'equipment') {
+        populateSelect('filterSubEquipment', getUnique(subset, 'subEquipmentName'), 'SubEquipment');
+    }
+
+    if (subEquipVal) subset = subset.filter(d => d.subEquipmentName === subEquipVal);
+    if (changedLevel === 'init' || changedLevel === 'location' || changedLevel === 'block' || changedLevel === 'equipment' || changedLevel === 'subEquipment') {
+        populateSelect('filterMake', getUnique(subset, 'make'), 'Make');
+    }
+
+    filterAndRender();
+}
+
+function getUnique(arr, key) {
+    const set = new Set();
+    arr.forEach(item => {
+        if (item[key] && item[key] !== '-' && item[key] !== 'N/A') {
+            set.add(String(item[key]).trim());
+        }
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+}
+
+function populateSelect(id, values, label) {
+    const el = document.getElementById(id);
+    const currVal = el.value;
+    el.innerHTML = `<option value="">All ${label}s</option>`;
+    values.forEach(v => {
+        el.innerHTML += `<option value="${v}">${v}</option>`;
+    });
+    if (values.includes(currVal)) {
+        el.value = currVal;
+    } else {
+        el.value = "";
+    }
+}
+
+function filterAndRender() {
+    const loc = document.getElementById('filterLocation').value;
+    const block = document.getElementById('filterBlock').value;
+    const equip = document.getElementById('filterEquipment').value;
+    const subEquip = document.getElementById('filterSubEquipment').value;
+    const make = document.getElementById('filterMake').value;
+    const gen = document.getElementById('filterGeneral').value.toLowerCase().trim();
+
+    const filtered = rawData.filter(item => {
+        const matchesLoc = !loc || item.location === loc;
+        const matchesBlock = !block || item.block === block;
+        const matchesEquip = !equip || item.equipmentName === equip;
+        const matchesSub = !subEquip || item.subEquipmentName === subEquip;
+        const matchesMake = !make || item.make === make;
+        const matchesGen = !gen || Object.values(item).some(v => String(v).toLowerCase().includes(gen));
+
+        return matchesLoc && matchesBlock && matchesEquip && matchesSub && matchesMake && matchesGen;
+    });
+
+    renderTable(filtered);
+}
+
+function renderTable(data) {
+    document.getElementById('recordCount').innerText = data.length;
+    document.getElementById('assetTableBody').innerHTML = data.map(item => `
+        <tr>
+            <td>${item.location}</td>
+            <td><span class="badge bg-secondary">Block ${item.block}</span></td>
+            <td><strong>${item.equipmentName}</strong></td>
+            <td>${item.subEquipmentName}</td>
+            <td>${item.make}</td>
+            <td>${item.qty}</td>
+            <td><small class="text-muted">${item.capacity}</small></td>
+            <td><code>${item.serialNo}</code></td>
+            <td>${item.ipAddress !== '-' ? `<span class="badge bg-success">${item.ipAddress}</span>` : '-'}</td>
+            <td><small>${item.ipForEquipment}</small></td>
+            <td><button class="btn btn-sm btn-outline-warning" onclick="openEditModal('${item.id}')">✏️ Edit / Delete</button></td>
+        </tr>
+    `).join('');
+}
+
+function resetFilters() {
+    document.getElementById('filterLocation').value = '';
+    document.getElementById('filterBlock').value = '';
+    document.getElementById('filterEquipment').value = '';
+    document.getElementById('filterSubEquipment').value = '';
+    document.getElementById('filterMake').value = '';
+    document.getElementById('filterGeneral').value = '';
+    updateDropdownCascade('init');
+}
+
+function openAddModal() { addModal.show(); }
+
+async function saveNewAsset() {
+    const body = {
+        location: document.getElementById('addLocation').value,
+        block: document.getElementById('addBlock').value,
+        equipmentName: document.getElementById('addEquipmentName').value,
+        subEquipmentName: document.getElementById('addSubEquipmentName').value,
+        make: document.getElementById('addMake').value,
+        qty: document.getElementById('addQty').value,
+        capacity: document.getElementById('addCapacity').value,
+        serialNo: document.getElementById('addSerialNo').value,
+        ipAddress: document.getElementById('addIpAddress').value,
+        ipForEquipment: document.getElementById('addIpForEquipment').value,
+    };
+
+    const res = await fetch('/api/assets/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    });
+    const resData = await res.json();
+    if(resData.success) {
+        alert(resData.message);
+        addModal.hide();
+        fetchAssets();
+    }
+}
+
+function openEditModal(id) {
+    const item = rawData.find(a => String(a.id) === String(id));
+    if(!item) return;
+    document.getElementById('editId').value = item.id;
+    document.getElementById('editLocation').value = item.location;
+    document.getElementById('editBlock').value = item.block;
+    document.getElementById('editEquipmentName').value = item.equipmentName;
+    document.getElementById('editSubEquipmentName').value = item.subEquipmentName;
+    document.getElementById('editMake').value = item.make;
+    document.getElementById('editQty').value = item.qty;
+    document.getElementById('editCapacity').value = item.capacity;
+    document.getElementById('editSerialNo').value = item.serialNo;
+    document.getElementById('editIpAddress').value = item.ipAddress;
+    document.getElementById('editIpForEquipment').value = item.ipForEquipment;
+    document.getElementById('editPassword').value = '';
+    editModal.show();
+}
+
+async function updateAsset() {
+    const pass = document.getElementById('editPassword').value;
+    const body = {
+        id: document.getElementById('editId').value,
+        location: document.getElementById('editLocation').value,
+        block: document.getElementById('editBlock').value,
+        equipmentName: document.getElementById('editEquipmentName').value,
+        subEquipmentName: document.getElementById('editSubEquipmentName').value,
+        make: document.getElementById('editMake').value,
+        qty: document.getElementById('editQty').value,
+        capacity: document.getElementById('editCapacity').value,
+        serialNo: document.getElementById('editSerialNo').value,
+        ipAddress: document.getElementById('editIpAddress').value,
+        ipForEquipment: document.getElementById('editIpForEquipment').value,
+    };
+
+    const res = await fetch('/api/assets/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pass },
+        body: JSON.stringify(body)
+    });
+    const result = await res.json();
+    if(res.ok && result.success) {
+        alert(result.message);
+        editModal.hide();
+        fetchAssets();
+    } else {
+        alert("Error: " + result.message);
+    }
+}
+
+async function deleteAsset() {
+    if (!confirm("Are you sure you want to delete this asset?")) return;
+    const pass = document.getElementById('editPassword').value;
+    const id = document.getElementById('editId').value;
+
+    const res = await fetch('/api/assets/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pass },
+        body: JSON.stringify({ id })
+    });
+    const result = await res.json();
+    if(res.ok && result.success) {
+        alert(result.message);
+        editModal.hide();
+        fetchAssets();
+    } else {
+        alert("Error: " + result.message);
+    }
+}
+
+function openSettingsModal() { settingsModal.show(); }
+
+async function saveSettings() {
+    const pass = document.getElementById('settingCurrentPass').value;
+    const newHeading = document.getElementById('settingHeading').value;
+    const newPass = document.getElementById('settingNewPass').value;
+    const logoFile = document.getElementById('settingLogo').files[0];
+
+    if (logoFile) {
+        const formData = new FormData();
+        formData.append('logo', logoFile);
+        await fetch('/api/upload-logo', {
+            method: 'POST',
+            headers: { 'x-admin-password': pass },
+            body: formData
+        });
+    }
+
+    const res = await fetch('/api/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': pass },
+        body: JSON.stringify({ appTitle: newHeading, newPassword: newPass })
+    });
+
+    const result = await res.json();
+    if (res.ok && result.success) {
+        alert("Settings updated!");
+        settingsModal.hide();
+        loadSettings();
+    } else {
+        alert("Error: " + result.message);
+    }
+}
+</script>
+function openAddModal() {
+    const modalElement = document.getElementById('addModal');
+    const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+    modalInstance.show();
+}
+<!-- 1. Bootstrap Bundle JS MUST come FIRST -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- 2. Your Application Script comes SECOND -->
+<script>
+let rawData = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    fetchAssets();
+
+    document.getElementById('filterLocation').addEventListener('change', () => updateDropdownCascade('location'));
+    document.getElementById('filterBlock').addEventListener('change', () => updateDropdownCascade('block'));
+    document.getElementById('filterEquipment').addEventListener('change', () => updateDropdownCascade('equipment'));
+    document.getElementById('filterSubEquipment').addEventListener('change', () => updateDropdownCascade('subEquipment'));
+    document.getElementById('filterMake').addEventListener('change', () => filterAndRender());
+    document.getElementById('filterGeneral').addEventListener('input', () => filterAndRender());
+});
+
+// Modal Helper Functions
+function openAddModal() {
+    const el = document.getElementById('addModal');
+    bootstrap.Modal.getOrCreateInstance(el).show();
+}
+
+function openSettingsModal() {
+    const el = document.getElementById('settingsModal');
+    bootstrap.Modal.getOrCreateInstance(el).show();
+}
+
+function openEditModal(id) {
+    const item = rawData.find(a => String(a.id) === String(id));
+    if(!item) return;
+    document.getElementById('editId').value = item.id;
+    document.getElementById('editLocation').value = item.location;
+    document.getElementById('editBlock').value = item.block;
+    document.getElementById('editEquipmentName').value = item.equipmentName;
+    document.getElementById('editSubEquipmentName').value = item.subEquipmentName;
+    document.getElementById('editMake').value = item.make;
+    document.getElementById('editQty').value = item.qty;
+    document.getElementById('editCapacity').value = item.capacity;
+    document.getElementById('editSerialNo').value = item.serialNo;
+    document.getElementById('editIpAddress').value = item.ipAddress;
+    document.getElementById('editIpForEquipment').value = item.ipForEquipment;
+    document.getElementById('editPassword').value = '';
+
+    const el = document.getElementById('editModal');
+    bootstrap.Modal.getOrCreateInstance(el).show();
+}
+</script>
+
+<!-- Developer Credit Footer -->
+<footer class="text-center py-3 my-4 border-top text-muted">
+    <p class="mb-0">Designed & Developed by <strong>Rahul Kumawat</strong></p>
+</footer>
+</script>
+<!-- Developer Credit Footer -->
+<footer class="text-center py-3 my-4 border-top text-muted">
+    <p class="mb-0">Designed & Developed by <strong>Rahul Kumawat</strong></p>
+</footer>
 </body>
 </html>
